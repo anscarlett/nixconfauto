@@ -94,7 +94,7 @@ EOF
       if [ ! -d "$user_dir" ]; then
         echo "Error: User $username does not exist"
         exit 1
-      }
+      fi
 
       echo "Switching to user configuration: $username"
       home-manager switch --flake ".#$username@$HOSTNAME"
