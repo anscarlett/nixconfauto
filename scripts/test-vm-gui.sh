@@ -10,6 +10,24 @@ VM_DIR="$REPO_ROOT/.vm"
 DISK_IMAGE="$VM_DIR/test-disk.qcow2"
 ISO_PATH="$VM_DIR/nixos.iso"
 
+# Check if required commands are available
+check_command() {
+    if ! command -v "$1" &> /dev/null; then
+        echo "Required command '$1' not found. Running setup-vm-deps.sh..."
+        "$SCRIPT_DIR/setup-vm-deps.sh"
+        # Verify the command is now available
+        if ! command -v "$1" &> /dev/null; then
+            echo "Error: Failed to install required command '$1'"
+            exit 1
+        fi
+    fi
+}
+
+# Check for required commands
+check_command qemu-system-x86_64
+check_command remote-viewer
+check_command qemu-img
+
 # Create VM directory if it doesn't exist
 mkdir -p "$VM_DIR"
 
@@ -41,6 +59,9 @@ if [[ ! -f "$ISO_PATH" ]]; then
     curl -L -o "$ISO_PATH" https://channels.nixos.org/nixos-24.11/latest-nixos-minimal-x86_64-linux.iso
 fi
 
+# Start remote-viewer in the background
+(sleep 2 && remote-viewer spice://localhost:5930) &
+
 # Start QEMU with:
 # - Our test disk
 # - NixOS minimal ISO
@@ -67,13 +88,3 @@ exec qemu-system-x86_64 \
     -chardev spicevmc,id=spicechannel0,name=vdagent \
     -virtfs local,path="$REPO_ROOT",mount_tag=host,security_model=passthrough,id=host \
     "${@}"
-
-# Print instructions
-echo
-echo "VM is starting..."
-echo "To connect with clipboard sharing:"
-echo "1. Run: remote-viewer spice://localhost:5930"
-echo
-echo "To access the repo directory in the VM:"
-echo "mkdir -p /mnt/host"
-echo "mount -t 9p host /mnt/host -o trans=virtio,version=9p2000.L"
