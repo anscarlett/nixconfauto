@@ -54,7 +54,7 @@ let
         echo "Error: Hostname is required"
         print_usage
         exit 1
-      }
+      fi
 
       local host_dir="hosts/$hostname"
       if [ ! -d "$host_dir" ]; then
@@ -96,7 +96,7 @@ let
         print_usage
         exit 1
         ;;
-    esac
+      esac
   '';
 in pkgs.symlinkJoin {
   inherit name;
