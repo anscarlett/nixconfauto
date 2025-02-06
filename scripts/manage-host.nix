@@ -60,7 +60,7 @@ let
       if [ ! -d "$host_dir" ]; then
         echo "Error: Host $hostname does not exist"
         exit 1
-      }
+      fi
 
       echo "Installing NixOS for host: $hostname"
       echo "This will:"
@@ -96,7 +96,7 @@ let
         print_usage
         exit 1
         ;;
-      esac
+    esac
   '';
 in pkgs.symlinkJoin {
   inherit name;
