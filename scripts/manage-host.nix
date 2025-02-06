@@ -33,7 +33,7 @@ let
       if [ -d "$host_dir" ]; then
         echo "Error: Host $hostname already exists"
         exit 1
-      }
+      fi
 
       echo "Creating new host: $hostname"
       cp -r hosts/template "$host_dir"
