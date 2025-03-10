@@ -49,8 +49,8 @@ print_step_status() {
 }
 
 print_header() {
-  echo -e "\$BLUE\$BOLD"'NixOS Quick Install'"\$NC"
-  echo -e "\$BLUE"'==============='"\$NC\n"
+  echo -e "${BLUE}${BOLD}NixOS Quick Install${NC}"
+  echo -e "${BLUE}===============${NC}\n"
   
   # Show step status
   local steps=("Disk" "Config" "Edit" "Install")
@@ -78,7 +78,7 @@ print_header() {
 
 # Check environment
 if [ "$(id -u)" -ne 0 ]; then
-  echo -e "\$RED"'Error: This script must be run as root'"\$NC"
+  echo -e "${RED}Error: This script must be run as root${NC}"
   exit 1
 fi
 
@@ -88,7 +88,7 @@ check_mounts() {
   local mounted_parts
   mounted_parts=$(lsblk -n -o NAME,MOUNTPOINTS "/dev/$disk" | grep -v "^$disk" | grep -v "^$" | cut -d' ' -f2)
   if [ -n "$mounted_parts" ]; then
-    echo -e "\$RED""Error: Some partitions are still mounted:""\$NC"
+    echo -e "${RED}Error: Some partitions are still mounted:${NC}"
     echo "$mounted_parts"
     return 1
   fi
@@ -101,13 +101,13 @@ check_disk_safety() {
   
   # Check if disk exists
   if [ ! -e "/dev/$disk" ]; then
-    echo -e "\$RED""Error: /dev/$disk not found""\$NC"
+    echo -e "${RED}Error: /dev/$disk not found${NC}"
     return 1
   fi
 
   # Check if it's really a disk (not a partition)
   if ! lsblk -n -o TYPE "/dev/$disk" | grep -q "^disk$"; then
-    echo -e "\$RED""Error: /dev/$disk is not a disk""\$NC"
+    echo -e "${RED}Error: /dev/$disk is not a disk${NC}"
     return 1
   fi
 
@@ -121,7 +121,7 @@ check_disk_safety() {
   local size_bytes
   size_bytes=$(lsblk -n -o SIZE -b "/dev/$disk" | head -n1)
   if [ "$size_bytes" -lt 2147483648 ]; then
-    echo -e "\$RED""Error: Disk is too small (minimum 2GB required)""\$NC"
+    echo -e "${RED}Error: Disk is too small (minimum 2GB required)${NC}"
     return 1
   fi
 
@@ -174,7 +174,7 @@ wait_for_partition() {
   done
 
   if [ ! -e "/dev/${disk}${part_num}" ]; then
-    echo -e "\$RED""Error: Partition /dev/${disk}${part_num} not found after $timeout seconds""\$NC"
+    echo -e "${RED}Error: Partition /dev/${disk}${part_num} not found after $timeout seconds${NC}"
     return 1
   fi
   return 0
@@ -182,7 +182,7 @@ wait_for_partition() {
 
 # Create and format partitions
 prepare_disk() {
-  echo -e "\n\$BOLD"'Preparing disk...'"\$NC"
+  echo -e "\n${BOLD}Preparing disk...${NC}"
   
   # Select disk to install to
   local disk
@@ -190,25 +190,25 @@ prepare_disk() {
   
   echo "Creating partition table..."
   if ! parted "/dev/$disk" -- mklabel gpt; then
-    echo -e "\$RED""Error: Failed to create GPT partition table""\$NC"
+    echo -e "${RED}Error: Failed to create GPT partition table${NC}"
     return 1
   fi
   
   echo "Creating EFI system partition..."
   if ! parted "/dev/$disk" -- mkpart ESP fat32 1MB 512MB; then
-    echo -e "\$RED""Error: Failed to create EFI partition""\$NC"
+    echo -e "${RED}Error: Failed to create EFI partition${NC}"
     return 1
   fi
   
   echo "Setting ESP flag..."
   if ! parted "/dev/$disk" -- set 1 esp on; then
-    echo -e "\$RED""Error: Failed to set ESP flag""\$NC"
+    echo -e "${RED}Error: Failed to set ESP flag${NC}"
     return 1
   fi
   
   echo "Creating root partition..."
   if ! parted "/dev/$disk" -- mkpart primary 512MB 100%; then
-    echo -e "\$RED""Error: Failed to create root partition""\$NC"
+    echo -e "${RED}Error: Failed to create root partition${NC}"
     return 1
   fi
   
@@ -220,45 +220,45 @@ prepare_disk() {
   
   echo "Formatting EFI partition..."
   if ! mkfs.fat -F 32 -n boot "/dev/${disk}1"; then
-    echo -e "\$RED""Error: Failed to format EFI partition""\$NC"
+    echo -e "${RED}Error: Failed to format EFI partition${NC}"
     return 1
   fi
   
   echo "Formatting root partition..."
   if ! mkfs.ext4 -L nixos "/dev/${disk}2"; then
-    echo -e "\$RED""Error: Failed to format root partition""\$NC"
+    echo -e "${RED}Error: Failed to format root partition${NC}"
     return 1
   fi
   
   echo "Mounting root partition..."
   if ! mount /dev/disk/by-label/nixos /mnt; then
-    echo -e "\$RED""Error: Failed to mount root partition""\$NC"
+    echo -e "${RED}Error: Failed to mount root partition${NC}"
     return 1
   fi
   
   echo "Mounting EFI partition..."
   mkdir -p /mnt/boot
   if ! mount /dev/disk/by-label/boot /mnt/boot; then
-    echo -e "\$RED""Error: Failed to mount EFI partition""\$NC"
+    echo -e "${RED}Error: Failed to mount EFI partition${NC}"
     umount /mnt
     return 1
   fi
   
-  echo -e "\$GREEN"'Disk preparation complete!'"\$NC"
+  echo -e "${GREEN}Disk preparation complete!${NC}"
   DISK_PREPARED=1
 }
 
 generate_config() {
-  echo -e "\n\$BOLD"'Generating NixOS configuration...'"\$NC"
+  echo -e "\n${BOLD}Generating NixOS configuration...${NC}"
   
   if [ ! -d "/mnt" ]; then
-    echo -e "\$RED""Error: /mnt directory not found. Please prepare disk first.""\$NC"
+    echo -e "${RED}Error: /mnt directory not found. Please prepare disk first.${NC}"
     return 1
   fi
 
   echo "Generating hardware configuration..."
   if ! nixos-generate-config --root /mnt; then
-    echo -e "\$RED""Error: Failed to generate hardware configuration""\$NC"
+    echo -e "${RED}Error: Failed to generate hardware configuration${NC}"
     return 1
   fi
   
@@ -381,12 +381,12 @@ generate_config() {
 }
 EOL
   
-  echo -e "\$GREEN"'Configuration generated!'"\$NC"
+  echo -e "${GREEN}Configuration generated!${NC}"
   CONFIG_GENERATED=1
 }
 
 edit_config() {
-  echo -e "\n\$BOLD"'Opening configuration for editing...'"\$NC"
+  echo -e "\n${BOLD}Opening configuration for editing...${NC}"
   $EDITOR /mnt/etc/nixos/configuration.nix
   CONFIG_EDITED=1
 }
@@ -435,27 +435,27 @@ main_menu() {
     
     # Show step status
     if [ $DISK_PREPARED -eq 1 ]; then
-      echo -e "\$GREEN✓\$NC 1) Prepare disk         - Partitions created & formatted"
+      echo -e "${GREEN}✓${NC} 1) Prepare disk         - Partitions created & formatted"
     else
       echo -e "  1) Prepare disk         - Create & format partitions"
     fi
 
     if [ $CONFIG_GENERATED -eq 1 ]; then
-      echo -e "\$GREEN✓\$NC 2) Generate config      - Basic config with VM tools"
+      echo -e "${GREEN}✓${NC} 2) Generate config      - Basic config with VM tools"
     else
       echo -e "  2) Generate config      - Create NixOS configuration"
     fi
 
     if [ $CONFIG_EDITED -eq 1 ]; then
-      echo -e "\$GREEN✓\$NC 3) Edit config          - Configuration customized"
+      echo -e "${GREEN}✓${NC} 3) Edit config          - Configuration customized"
     else
       echo -e "  3) Edit config          - Customize configuration"
     fi
 
     if [ $DISK_PREPARED -eq 1 ] && [ $CONFIG_GENERATED -eq 1 ]; then
-      echo -e "  4) Install system       - Install NixOS\$GREEN (Ready)\$NC"
+      echo -e "  4) Install system       - Install NixOS${GREEN} (Ready)${NC}"
     else
-      echo -e "  4) Install system       - Install NixOS\$YELLOW (Need steps 1-2)\$NC"
+      echo -e "  4) Install system       - Install NixOS${YELLOW} (Need steps 1-2)${NC}"
     fi
 
     echo -e "\nq) Quit                  - Exit installer"
