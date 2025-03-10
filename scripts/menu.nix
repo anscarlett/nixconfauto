@@ -11,6 +11,7 @@ pkgs.writeShellApplication {
     nixos-install-tools vim util-linux
   ];
   text = ''
+    
       #!/usr/bin/env bash
       set -euo pipefail
 
@@ -43,11 +44,12 @@ pkgs.writeShellApplication {
         printf "%*s" $((20 - ${#step} - ${#desc})) " "
         
         case "$status" in
-          done)    echo -e "${GREEN}✓${NC}" ;;
-          pending) echo -e "${YELLOW}○${NC}" ;;
-          ready)   echo -e "${GREEN}→${NC}" ;;
-          error)   echo -e "${RED}!${NC}" ;;
-          skip)    echo -e "${YELLOW}-${NC}" ;;
+          "done")    echo -e "${GREEN}✓${NC}" ;;
+          "pending") echo -e "${YELLOW}○${NC}" ;;
+          "ready")   echo -e "${GREEN}→${NC}" ;;
+          "error")   echo -e "${RED}!${NC}" ;;
+          "skip")    echo -e "${YELLOW}-${NC}" ;;
+          *)         echo -e "${RED}?${NC}" ;;
         esac
       }
 
@@ -63,14 +65,15 @@ pkgs.writeShellApplication {
         for step in "${steps[@]}"; do
           local status="pending"
           
-          case $i in
-            1) [ $DISK_PREPARED -eq 1 ] && status="done" ;;
-            2) [ $DISK_PREPARED -eq 0 ] && status="skip"
-               [ $CONFIG_GENERATED -eq 1 ] && status="done" ;;
-            3) [ $CONFIG_GENERATED -eq 0 ] && status="skip"
-               [ $CONFIG_EDITED -eq 1 ] && status="done" ;;
-            4) [ $DISK_PREPARED -eq 1 ] && [ $CONFIG_GENERATED -eq 1 ] && status="ready"
-               [ $DISK_PREPARED -eq 0 ] || [ $CONFIG_GENERATED -eq 0 ] && status="skip" ;;
+          case "$i" in
+            "1") [ $DISK_PREPARED -eq 1 ] && status="done" ;;
+            "2") [ $DISK_PREPARED -eq 0 ] && status="skip"
+                [ $CONFIG_GENERATED -eq 1 ] && status="done" ;;
+            "3") [ $CONFIG_GENERATED -eq 0 ] && status="skip"
+                [ $CONFIG_EDITED -eq 1 ] && status="done" ;;
+            "4") [ $DISK_PREPARED -eq 1 ] && [ $CONFIG_GENERATED -eq 1 ] && status="ready"
+                [ $DISK_PREPARED -eq 0 ] || [ $CONFIG_GENERATED -eq 0 ] && status="skip" ;;
+            *) status="error" ;;
           esac
           
           print_step_status "$i)" "$step" "$status"
@@ -469,8 +472,8 @@ pkgs.writeShellApplication {
     read -p "Select an option: " choice
     echo
     
-    case $choice in
-      1)
+    case "$choice" in
+      "1")
         if prepare_disk; then
           DISK_PREPARED=1
           echo -e "\n${GREEN}✓ Disk ready${NC}"
@@ -479,7 +482,7 @@ pkgs.writeShellApplication {
         fi
         read -p "> "
         ;;
-      2)
+      "2")
         if [ $DISK_PREPARED -eq 0 ]; then
           echo -e "${YELLOW}! Run step 1 first${NC}"
         elif generate_config; then
@@ -490,7 +493,7 @@ pkgs.writeShellApplication {
         fi
         read -p "> "
         ;;
-      3)
+      "3")
         if [ $CONFIG_GENERATED -eq 0 ]; then
           echo -e "${YELLOW}! Run step 2 first${NC}"
         else
@@ -501,7 +504,7 @@ pkgs.writeShellApplication {
         fi
         read -p "> "
         ;;
-      4)
+      "4")
         if [ $DISK_PREPARED -eq 0 ] || [ $CONFIG_GENERATED -eq 0 ]; then
           echo -e "${YELLOW}! Complete steps 1-2${NC}"
         else
@@ -513,10 +516,10 @@ pkgs.writeShellApplication {
         fi
         read -p "> "
         ;;
-      h)
+      "h")
         print_help
         ;;
-      q)
+      "q")
         echo -e "\nBye!"
         exit 0
         ;;
@@ -528,8 +531,8 @@ pkgs.writeShellApplication {
   done
 }
 
-# Trap cleanup
-trap 'echo -e "\n\nExiting..."; exit 0' INT
+      # Trap cleanup
+      trap 'echo -e "\n\nExiting..."; exit 0' INT
 
       # Start menu
       main_menu
