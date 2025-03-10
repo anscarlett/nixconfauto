@@ -11,6 +11,8 @@ let
     coreutils
     gnused
     nixos-generate-config
+    home-manager
+    nixos-rebuild
   ];
 
   # Wrap a script with dependencies
@@ -22,6 +24,9 @@ let
       # Script content
       ${script}
     '';
+
+  # NixOS configuration menu
+  nixconfMenu = import ../../scripts/menu.nix { inherit pkgs; };
 
   # Create home configuration script
   createHome = wrapScript "create-home" ''
@@ -102,9 +107,9 @@ let
     echo "   sudo nixos-generate-config --show-hardware-config > $TARGET_DIR/hardware-configuration.nix"
     echo
     echo "2. Choose a disk configuration by uncommenting one of:"
-    echo "   - configs/hardware/disko/basic.nix"
-    echo "   - configs/hardware/disko/encrypted.nix"
-    echo "   - configs/hardware/disko/encrypted-yubikey.nix"
+    echo "   - hardware/disko/basic.nix"
+    echo "   - hardware/disko/encrypted.nix"
+    echo "   - hardware/disko/encrypted-yubikey.nix"
     echo
     echo "3. Customize these files:"
     echo "  - $TARGET_DIR/default.nix (system configuration)"

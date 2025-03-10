@@ -3,13 +3,13 @@
 # SPDX-License-Identifier: GPL-3.0-only
 
 let
-  # Import all input categories
+  # Import all input configurations
   nixpkgs = import ./nixpkgs.nix;
-  homeManager = import ./home-manager.nix;
+  home-manager = import ./home-manager.nix;
   disko = import ./disko.nix;
-  impermanence = import ./impermanence.nix;
   agenix = import ./agenix.nix;
+  impermanence = import ./impermanence.nix;
   stylix = import ./stylix.nix;
 in
-  # Merge all inputs
-  nixpkgs // homeManager // disko // impermanence // agenix // stylix
+# Merge all inputs into a single attribute set
+nixpkgs // home-manager // disko // agenix // impermanence // stylix

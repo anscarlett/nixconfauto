@@ -5,5 +5,5 @@
 {
   description = "NixOS configuration";
   inputs = import ./inputs;
-  outputs = import ./outputs;
+  outputs = inputs: import ./outputs inputs;
 }

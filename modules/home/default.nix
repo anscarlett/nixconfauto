@@ -6,6 +6,7 @@
 { config, pkgs, lib, ... }: {
   imports = [
     ../theme                   # Stylix theme configuration
+    ./defaults                # Default program selections and configurations
     ./programs/git.nix
     ./programs/terminal.nix
     ./programs/shell.nix

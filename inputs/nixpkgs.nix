@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-only
 
-# Nixpkgs input
 let
   versions = import ../versions.nix;
 in

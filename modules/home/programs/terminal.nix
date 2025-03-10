@@ -2,10 +2,10 @@
 #
 # SPDX-License-Identifier: GPL-3.0-only
 
-# Terminal configuration (using Alacritty)
+# Terminal configuration
 { config, pkgs, lib, ... }: {
   programs.alacritty = {
-    enable = true;
+    enable = config.defaultPrograms.terminal == "alacritty" || config.programs.alacritty.enable;
     settings = {
       env.TERM = "xterm-256color";
 

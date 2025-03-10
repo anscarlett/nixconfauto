@@ -4,7 +4,7 @@
 
 # Disko utilities for disk formatting
 { lib, ... }: let
-  diskoConfig = import ../configs/hardware/disko/default.nix { inherit lib; };
+  diskoConfig = import ../hardware/disko/default.nix { inherit lib; };
 in {
   # Re-export disko configurations
   basic = diskoConfig.basic;

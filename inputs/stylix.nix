@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-only
 
-# Stylix for system-wide theming
 {
   stylix = {
     url = "github:danth/stylix";

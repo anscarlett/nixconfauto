@@ -38,7 +38,8 @@ fi
 # Download NixOS ISO if needed
 if [[ ! -f "$ISO_PATH" ]]; then
     echo "Downloading NixOS minimal ISO..."
-    curl -L -o "$ISO_PATH" https://channels.nixos.org/nixos-24.11/latest-nixos-minimal-x86_64-linux.iso
+    # Use latest NixOS unstable for testing
+    curl -L -o "$ISO_PATH" https://channels.nixos.org/nixos-unstable/latest-nixos-minimal-x86_64-linux.iso
 fi
 
 # Start QEMU with:

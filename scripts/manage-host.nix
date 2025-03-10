@@ -45,7 +45,7 @@ let
       echo "Next steps:"
       echo "1. Edit $host_dir/default.nix to customize your configuration"
       echo "2. Generate hardware configuration: nixos-generate-config --dir $host_dir"
-      echo "3. Choose your disk configuration from configs/hardware/disko/"
+      echo "3. Choose your disk configuration from hardware/disko/"
     }
 
     function install_host() {

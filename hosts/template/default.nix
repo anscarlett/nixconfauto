@@ -9,9 +9,9 @@
     ../../modules/system/disk-validation.nix # Validate disk config imports
 
     # Choose one of:
-    # ../../configs/hardware/disko/basic.nix
-    # ../../configs/hardware/disko/encrypted.nix
-    # ../../configs/hardware/disko/encrypted-yubikey.nix
+    # ../../hardware/disko/basic.nix
+    # ../../hardware/disko/encrypted.nix
+    # ../../hardware/disko/encrypted-yubikey.nix
     
     ./theme.nix                # Stylix theme configuration
   ];

@@ -1,3 +1,31 @@
-# VM-related
+# Generated Nix outputs
+result
+result-*
+
+# Nix development environment
+.direnv/
+.envrc
+.pre-commit-config.yaml
+.std
+.cache/
+.nixpkgs/
+
+# Virtual machines and disk images
 .vm/
 *.vm/
+*.qcow2
+
+# Editor and IDE files
+.vscode/          # Visual Studio Code
+.idea/           # JetBrains IDEs
+*.swp            # Vim swap files
+*~               # Emacs backup files
+
+# Operating system files
+.DS_Store        # macOS metadata
+Thumb.db         # Windows thumbnails
+
+# Logs and temporary files
+*.log
+tmp/
+temp/

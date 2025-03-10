@@ -12,9 +12,9 @@ let
   
   # List of valid disk configurations
   validDiskoConfigs = [
-    "configs/hardware/disko/basic.nix"
-    "configs/hardware/disko/encrypted.nix"
-    "configs/hardware/disko/encrypted-yubikey.nix"
+    "hardware/disko/basic.nix"
+    "hardware/disko/encrypted.nix"
+    "hardware/disko/encrypted-yubikey.nix"
   ];
 
   # Function to check if a module is imported
