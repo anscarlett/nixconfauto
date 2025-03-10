@@ -4,17 +4,11 @@
 
 { pkgs ? import <nixpkgs> {} }:
 
-with pkgs;
-writeShellApplication {
-  name = "nixos-install-menu";
-  runtimeInputs = [
-    coreutils
-    parted
-    dosfstools
-    e2fsprogs
-    nixos-install-tools
-    vim
-    util-linux # for lsblk
+pkgs.writeShellApplication {
+  name = "install";
+  runtimeInputs = with pkgs; [
+    coreutils parted dosfstools e2fsprogs
+    nixos-install-tools vim util-linux
   ];
   text = ''
 
@@ -41,65 +35,45 @@ print_step_status() {
   local step="$1"
   local desc="$2"
   local status="$3"
-  local note="$4"
   
   printf "  %s %s" "$step" "$desc"
-  printf "%*s" $((35 - ${#step} - ${#desc})) " "
+  printf "%*s" $((20 - ${#step} - ${#desc})) " "
   
   case "$status" in
-    done)    echo -e "[${GREEN}✓${NC}] ${GREEN}Done${NC}" ;;
-    pending) echo -e "[ ] ${YELLOW}Pending${NC}" ;;
-    ready)   echo -e "[${GREEN}!${NC}] ${GREEN}Ready${NC}" ;;
-    error)   echo -e "[${RED}!${NC}] ${RED}Failed${NC}" ;;
-    skip)    echo -e "[-] ${YELLOW}Skipped${NC}" ;;
+    done)    echo -e "${GREEN}✓${NC}" ;;
+    pending) echo -e "${YELLOW}○${NC}" ;;
+    ready)   echo -e "${GREEN}→${NC}" ;;
+    error)   echo -e "${RED}!${NC}" ;;
+    skip)    echo -e "${YELLOW}-${NC}" ;;
   esac
-  
-  if [ -n "$note" ]; then
-    printf "%*s%s\n" 45 " " "$note"
-  fi
 }
 
 print_header() {
-  echo -e "\$BLUE\$BOLD"'NixOS Installation Menu'"\$NC"
-  echo -e "\$BLUE"'===================='"\$NC\n"
-  echo "This script will help you install NixOS on your system."
-  echo "Requirements:"
-  echo "  - Running as root"
-  echo "  - A disk to install to"
-  echo "  - Internet connection for downloading packages"
-  echo
-  echo "Installation Steps:"
+  echo -e "\$BLUE\$BOLD"'NixOS Quick Install'"\$NC"
+  echo -e "\$BLUE"'==============='"\$NC\n"
   
   # Show step status
-  if [ $DISK_PREPARED -eq 1 ]; then
-    print_step_status "1)" "Prepare disk" "done"
-  else
-    print_step_status "1)" "Prepare disk" "pending" "Create partitions and filesystems"
-  fi
+  local steps=("Disk" "Config" "Edit" "Install")
+  local i=1
   
-  if [ $DISK_PREPARED -eq 0 ]; then
-    print_step_status "2)" "Generate config" "skip" "Complete step 1 first"
-  elif [ $CONFIG_GENERATED -eq 1 ]; then
-    print_step_status "2)" "Generate config" "done"
-  else
-    print_step_status "2)" "Generate config" "pending" "Create NixOS configuration"
-  fi
+  for step in "${steps[@]}"; do
+    local status="pending"
+    
+    case $i in
+      1) [ $DISK_PREPARED -eq 1 ] && status="done" ;;
+      2) [ $DISK_PREPARED -eq 0 ] && status="skip"
+         [ $CONFIG_GENERATED -eq 1 ] && status="done" ;;
+      3) [ $CONFIG_GENERATED -eq 0 ] && status="skip"
+         [ $CONFIG_EDITED -eq 1 ] && status="done" ;;
+      4) [ $DISK_PREPARED -eq 1 ] && [ $CONFIG_GENERATED -eq 1 ] && status="ready"
+         [ $DISK_PREPARED -eq 0 ] || [ $CONFIG_GENERATED -eq 0 ] && status="skip" ;;
+    esac
+    
+    print_step_status "$i)" "$step" "$status"
+    i=$((i + 1))
+  done
   
-  if [ $CONFIG_GENERATED -eq 0 ]; then
-    print_step_status "3)" "Edit config" "skip" "Complete step 2 first"
-  elif [ $CONFIG_EDITED -eq 1 ]; then
-    print_step_status "3)" "Edit config" "done"
-  else
-    print_step_status "3)" "Edit config" "pending" "Customize your system"
-  fi
-  
-  if [ $DISK_PREPARED -eq 1 ] && [ $CONFIG_GENERATED -eq 1 ]; then
-    print_step_status "4)" "Install NixOS" "ready" "Ready to install"
-  else
-    print_step_status "4)" "Install NixOS" "skip" "Complete steps 1-2 first"
-  fi
-  
-  echo -e "\nq) Quit                  Exit installer\n"
+  echo -e "\nq) Quit\n"
 }
 
 # Check environment
@@ -418,83 +392,39 @@ edit_config() {
 }
 
 install_system() {
-  echo -e "\n\$BOLD"'Installing NixOS...'"\$NC"
-  
-  # Check if disk is prepared
-  if [ ! -d "/mnt/boot" ] || [ ! -d "/mnt/etc/nixos" ]; then
-    echo -e "\$RED""Error: System not ready for installation""\$NC"
-    echo "Please complete disk preparation and configuration steps first."
-    return 1
-  fi
+  # Quick validation
+  [ ! -d "/mnt/boot" ] && { echo -e "${RED}× No boot partition${NC}"; return 1; }
+  [ ! -f "/mnt/etc/nixos/configuration.nix" ] && { echo -e "${RED}× No config file${NC}"; return 1; }
+  ping -c 1 cache.nixos.org >/dev/null 2>&1 || { echo -e "${RED}× No internet${NC}"; return 1; }
 
-  # Check if configuration exists
-  if [ ! -f "/mnt/etc/nixos/configuration.nix" ] || [ ! -f "/mnt/etc/nixos/hardware-configuration.nix" ]; then
-    echo -e "\$RED""Error: NixOS configuration files not found""\$NC"
-    echo "Please generate configuration first."
+  echo -e "\n${BLUE}Installing NixOS...${NC}"
+  if nixos-install --no-root-passwd; then
+    echo -e "\nLogin: ${GREEN}nixos${NC}"
+    echo -e "Pass:  ${GREEN}nixos${NC}"
+    echo -e "\n${YELLOW}Remember to change password!${NC}"
+    return 0
+  else
+    echo -e "${RED}× Install failed${NC}"
     return 1
   fi
-
-  # Check internet connection
-  if ! ping -c 1 cache.nixos.org >/dev/null 2>&1; then
-    echo -e "\$RED""Error: No internet connection""\$NC"
-    echo "Please check your network connection and try again."
-    return 1
-  fi
-
-  echo "Starting NixOS installation..."
-  echo "This may take a while depending on your internet connection."
-  echo "Installing packages and setting up the system..."
-  
-  if ! nixos-install --no-root-passwd; then
-    echo -e "\$RED""Error: Installation failed""\$NC"
-    echo "Check the error messages above for more details."
-    return 1
-  fi
-  
-  echo -e "\n\$GREEN"'Installation complete!'"\$NC"
-  echo -e "\nNext steps:"
-  echo "1. Reboot the system:     shutdown -r now"
-  echo "2. Log in as:            nixos"
-  echo "3. Default password:      nixos"
-  echo "4. Change your password:  passwd"
-  echo "\nImportant:"
-  echo "- Remember to change the default password after first login"
-  echo "- Your configuration is in /etc/nixos/configuration.nix"
 }
 
 # Print help
 print_help() {
-  echo -e "\n${BLUE}${BOLD}NixOS Installation Help${NC}"
-  echo -e "${BLUE}===================${NC}\n"
-  echo "This installer will help you set up NixOS on your system."
-  echo
-  echo "Installation Process:"
-  echo "1. Prepare Disk"
-  echo "   - Creates a GPT partition table"
-  echo "   - Creates a 512MB EFI boot partition"
-  echo "   - Uses remaining space for NixOS root"
-  echo
-  echo "2. Generate Config"
-  echo "   - Creates hardware-specific configuration"
-  echo "   - Sets up basic system services"
-  echo "   - Configures bootloader and networking"
-  echo
-  echo "3. Edit Config"
-  echo "   - Customize your configuration"
-  echo "   - Add/remove packages"
-  echo "   - Configure system services"
-  echo
-  echo "4. Install NixOS"
-  echo "   - Installs the base system"
-  echo "   - Sets up bootloader"
-  echo "   - Creates initial user account"
+  echo -e "\n${BLUE}${BOLD}NixOS Quick Install${NC}"
+  echo -e "${BLUE}===============${NC}\n"
+  echo "Steps:"
+  echo "1) Disk    - Create partitions (EFI + root)"
+  echo "2) Config  - Generate system config"
+  echo "3) Edit    - Customize settings"
+  echo "4) Install - Set up NixOS"
   echo
   echo "Commands:"
-  echo "  1-4  Execute the corresponding step"
-  echo "  h    Show this help message"
-  echo "  q    Exit the installer"
+  echo "1-4  Run step"
+  echo "h    Help"
+  echo "q    Quit"
   echo
-  read -p "Press Enter to return to menu..."
+  read -p "Press Enter for menu..."
 }
 
 # Main menu
@@ -538,66 +468,55 @@ main_menu() {
       1)
         if prepare_disk; then
           DISK_PREPARED=1
-          echo -e "\n${GREEN}Disk preparation successful!${NC}"
-          echo "Created:"
-          echo "  - EFI System Partition (512MB)"
-          echo "  - NixOS Root Partition (Remaining space)"
+          echo -e "\n${GREEN}✓ Disk ready${NC}"
         else
-          echo -e "\n${RED}Disk preparation failed${NC}"
+          echo -e "\n${RED}× Failed${NC}"
         fi
-        read -p "Press Enter to continue..."
+        read -p "> "
         ;;
       2)
         if [ $DISK_PREPARED -eq 0 ]; then
-          echo -e "${YELLOW}Warning: Please prepare disk first (Step 1)${NC}"
+          echo -e "${YELLOW}! Run step 1 first${NC}"
         elif generate_config; then
           CONFIG_GENERATED=1
-          echo -e "\n${GREEN}Configuration generated successfully!${NC}"
-          echo "Created:"
-          echo "  - /mnt/etc/nixos/configuration.nix"
-          echo "  - /mnt/etc/nixos/hardware-configuration.nix"
+          echo -e "\n${GREEN}✓ Config ready${NC}"
         else
-          echo -e "\n${RED}Configuration generation failed${NC}"
+          echo -e "\n${RED}× Failed${NC}"
         fi
-        read -p "Press Enter to continue..."
+        read -p "> "
         ;;
       3)
         if [ $CONFIG_GENERATED -eq 0 ]; then
-          echo -e "${YELLOW}Warning: Please generate configuration first (Step 2)${NC}"
+          echo -e "${YELLOW}! Run step 2 first${NC}"
         else
-          echo -e "\n${BLUE}Opening configuration in $EDITOR...${NC}"
-          echo "Tip: Save and exit when done:"
-          echo "  - In vim: press ESC, then :wq"
-          echo "  - In nano: press Ctrl+X, Y, Enter"
-          echo
+          echo -e "\n${BLUE}Opening in $EDITOR${NC}"
           edit_config
           CONFIG_EDITED=1
-          echo -e "\n${GREEN}Configuration updated!${NC}"
+          echo -e "${GREEN}✓ Saved${NC}"
         fi
-        read -p "Press Enter to continue..."
+        read -p "> "
         ;;
       4)
         if [ $DISK_PREPARED -eq 0 ] || [ $CONFIG_GENERATED -eq 0 ]; then
-          echo -e "${YELLOW}Warning: Please complete steps 1 and 2 before installing${NC}"
+          echo -e "${YELLOW}! Complete steps 1-2${NC}"
         else
           if install_system; then
-            echo -e "\n${GREEN}NixOS installation completed successfully!${NC}"
+            echo -e "\n${GREEN}✓ NixOS installed${NC}"
           else
-            echo -e "\n${RED}Installation failed${NC}"
+            echo -e "\n${RED}× Failed${NC}"
           fi
         fi
-        read -p "Press Enter to continue..."
+        read -p "> "
         ;;
       h)
         print_help
         ;;
       q)
-        echo -e "\nExiting NixOS installer..."
+        echo -e "\nBye!"
         exit 0
         ;;
       *)
-        echo -e "${RED}Invalid option${NC}"
-        echo "Type 'h' for help"
+        echo -e "${RED}Invalid${NC} (h=help)"
         sleep 1
         ;;
     esac
