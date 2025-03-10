@@ -289,176 +289,176 @@ pkgs.writeShellApplication {
           firewall = {
             enable = true;
             allowPing = true;
-    };
-  };
+          };
+        };
 
-  # Enable OpenSSH
-  services.openssh = {
-    enable = true;
-    settings = {
-      PermitRootLogin = "no";
-      PasswordAuthentication = true;
-    };
-  };
+        # Enable OpenSSH
+        services.openssh = {
+          enable = true;
+          settings = {
+            PermitRootLogin = "no";
+            PasswordAuthentication = true;
+          };
+        };
 
-  # Set time zone
-  time.timeZone = "UTC";
+        # Set time zone
+        time.timeZone = "UTC";
 
-  # Sound
-  sound.enable = true;
-  hardware.pulseaudio.enable = false;  # Using pipewire instead
-  security.rtkit.enable = true;  # Better real-time audio
-  services.pipewire = {
-    enable = true;
-    alsa.enable = true;
-    alsa.support32Bit = true;
-    pulse.enable = true;
-  };
+        # Sound
+        sound.enable = true;
+        hardware.pulseaudio.enable = false;  # Using pipewire instead
+        security.rtkit.enable = true;  # Better real-time audio
+        services.pipewire = {
+          enable = true;
+          alsa.enable = true;
+          alsa.support32Bit = true;
+          pulse.enable = true;
+        };
 
-  # Create default user
-  users.users.nixos = {
-    isNormalUser = true;
-    description = "NixOS User";
-    extraGroups = [ 
-      "wheel"           # Admin privileges
-      "networkmanager"  # Network management
-      "audio"          # Audio devices
-      "video"          # Video devices
-      "input"          # Input devices
-    ];
-    initialPassword = "nixos";
-  };
+        # Create default user
+        users.users.nixos = {
+          isNormalUser = true;
+          description = "NixOS User";
+          extraGroups = [ 
+            "wheel"           # Admin privileges
+            "networkmanager"  # Network management
+            "audio"          # Audio devices
+            "video"          # Video devices
+            "input"          # Input devices
+          ];
+          initialPassword = "nixos";
+        };
 
-  # Security
-  security.sudo.wheelNeedsPassword = true;  # Require password for sudo
+        # Security
+        security.sudo.wheelNeedsPassword = true;  # Require password for sudo
 
-  # Enable Nix features
-  nix = {
-    settings = {
-      experimental-features = [ "nix-command" "flakes" ];
-      trusted-users = [ "root" "@wheel" ];
-      auto-optimise-store = true;
-      warn-dirty = false;
-    };
-    gc = {
-      automatic = true;
-      dates = "weekly";
-      options = "--delete-older-than 30d";
-    };
-  };
-  nixpkgs.config.allowUnfree = true;
+        # Enable Nix features
+        nix = {
+          settings = {
+            experimental-features = [ "nix-command" "flakes" ];
+            trusted-users = [ "root" "@wheel" ];
+            auto-optimise-store = true;
+            warn-dirty = false;
+          };
+          gc = {
+            automatic = true;
+            dates = "weekly";
+            options = "--delete-older-than 30d";
+          };
+        };
+        nixpkgs.config.allowUnfree = true;
 
-  # System packages
-  environment.systemPackages = with pkgs; [
-    # System tools
-    vim
-    git
-    curl
-    wget
-    htop
-    pciutils      # PCI utilities
-    usbutils      # USB utilities
-    file          # File type info
-    lm_sensors    # Hardware sensors
-    dmidecode     # Hardware info
-    smartmontools # Disk health monitoring
+        # System packages
+        environment.systemPackages = with pkgs; [
+          # System tools
+          vim
+          git
+          curl
+          wget
+          htop
+          pciutils      # PCI utilities
+          usbutils      # USB utilities
+          file          # File type info
+          lm_sensors    # Hardware sensors
+          dmidecode     # Hardware info
+          smartmontools # Disk health monitoring
 
-    # Archive formats
-    zip
-    unzip
-    p7zip
+          # Archive formats
+          zip
+          unzip
+          p7zip
 
-    # Network tools
-    dig           # DNS lookup
-    whois
-    traceroute
-    nmap          # Network scanner
-  ];
+          # Network tools
+          dig           # DNS lookup
+          whois
+          traceroute
+          nmap          # Network scanner
+        ];
 
-  # System settings
-  system.stateVersion = "23.11";
+        # System settings
+        system.stateVersion = "23.11";
 
-  # Automatically optimize the Nix store
-  nix.optimise.automatic = true;
-}
-EOL
-  
-  echo -e "${GREEN}Configuration generated!${NC}"
-  CONFIG_GENERATED=1
-}
+        # Automatically optimize the Nix store
+        nix.optimise.automatic = true;
+      }
+      EOL
+      
+      echo -e "${GREEN}Configuration generated!${NC}"
+      CONFIG_GENERATED=1
+    }
 
-edit_config() {
-  echo -e "\n${BOLD}Opening configuration for editing...${NC}"
-  $EDITOR /mnt/etc/nixos/configuration.nix
-  CONFIG_EDITED=1
-}
+    edit_config() {
+      echo -e "\n${BOLD}Opening configuration for editing...${NC}"
+      $EDITOR /mnt/etc/nixos/configuration.nix
+      CONFIG_EDITED=1
+    }
 
-install_system() {
-  # Quick validation
-  [ ! -d "/mnt/boot" ] && { echo -e "${RED}× No boot partition${NC}"; return 1; }
-  [ ! -f "/mnt/etc/nixos/configuration.nix" ] && { echo -e "${RED}× No config file${NC}"; return 1; }
-  ping -c 1 cache.nixos.org >/dev/null 2>&1 || { echo -e "${RED}× No internet${NC}"; return 1; }
+    install_system() {
+      # Quick validation
+      [ ! -d "/mnt/boot" ] && { echo -e "${RED}× No boot partition${NC}"; return 1; }
+      [ ! -f "/mnt/etc/nixos/configuration.nix" ] && { echo -e "${RED}× No config file${NC}"; return 1; }
+      ping -c 1 cache.nixos.org >/dev/null 2>&1 || { echo -e "${RED}× No internet${NC}"; return 1; }
 
-  echo -e "\n${BLUE}Installing NixOS...${NC}"
-  if nixos-install --no-root-passwd; then
-    echo -e "\nLogin: ${GREEN}nixos${NC}"
-    echo -e "Pass:  ${GREEN}nixos${NC}"
-    echo -e "\n${YELLOW}Remember to change password!${NC}"
-    return 0
-  else
-    echo -e "${RED}× Install failed${NC}"
-    return 1
-  fi
-}
+      echo -e "\n${BLUE}Installing NixOS...${NC}"
+      if nixos-install --no-root-passwd; then
+        echo -e "\nLogin: ${GREEN}nixos${NC}"
+        echo -e "Pass:  ${GREEN}nixos${NC}"
+        echo -e "\n${YELLOW}Remember to change password!${NC}"
+        return 0
+      else
+        echo -e "${RED}× Install failed${NC}"
+        return 1
+      fi
+    }
 
-# Print help
-print_help() {
-  echo -e "\n${BLUE}${BOLD}NixOS Quick Install${NC}"
-  echo -e "${BLUE}===============${NC}\n"
-  echo "Steps:"
-  echo "1) Disk    - Create partitions (EFI + root)"
-  echo "2) Config  - Generate system config"
-  echo "3) Edit    - Customize settings"
-  echo "4) Install - Set up NixOS"
-  echo
-  echo "Commands:"
-  echo "1-4  Run step"
-  echo "h    Help"
-  echo "q    Quit"
-  echo
-  read -p "Press Enter for menu..."
-}
+    # Print help
+    print_help() {
+      echo -e "\n${BLUE}${BOLD}NixOS Quick Install${NC}"
+      echo -e "${BLUE}===============${NC}\n"
+      echo "Steps:"
+      echo "1) Disk    - Create partitions (EFI + root)"
+      echo "2) Config  - Generate system config"
+      echo "3) Edit    - Customize settings"
+      echo "4) Install - Set up NixOS"
+      echo
+      echo "Commands:"
+      echo "1-4  Run step"
+      echo "h    Help"
+      echo "q    Quit"
+      echo
+      read -p "Press Enter for menu..."
+    }
 
-# Main menu
-main_menu() {
-  while true; do
-    clear_screen
-    print_header
-    
-    # Show step status
-    if [ $DISK_PREPARED -eq 1 ]; then
-      echo -e "${GREEN}✓${NC} 1) Prepare disk         - Partitions created & formatted"
-    else
-      echo -e "  1) Prepare disk         - Create & format partitions"
-    fi
+    # Main menu
+    main_menu() {
+      while true; do
+        clear_screen
+        print_header
+        
+        # Show step status
+        if [ $DISK_PREPARED -eq 1 ]; then
+          echo -e "${GREEN}✓${NC} 1) Prepare disk         - Partitions created & formatted"
+        else
+          echo -e "  1) Prepare disk         - Create & format partitions"
+        fi
 
-    if [ $CONFIG_GENERATED -eq 1 ]; then
-      echo -e "${GREEN}✓${NC} 2) Generate config      - Basic config with VM tools"
-    else
-      echo -e "  2) Generate config      - Create NixOS configuration"
-    fi
+        if [ $CONFIG_GENERATED -eq 1 ]; then
+          echo -e "${GREEN}✓${NC} 2) Generate config      - Basic config with VM tools"
+        else
+          echo -e "  2) Generate config      - Create NixOS configuration"
+        fi
 
-    if [ $CONFIG_EDITED -eq 1 ]; then
-      echo -e "${GREEN}✓${NC} 3) Edit config          - Configuration customized"
-    else
-      echo -e "  3) Edit config          - Customize configuration"
-    fi
+        if [ $CONFIG_EDITED -eq 1 ]; then
+          echo -e "${GREEN}✓${NC} 3) Edit config          - Configuration customized"
+        else
+          echo -e "  3) Edit config          - Customize configuration"
+        fi
 
-    if [ $DISK_PREPARED -eq 1 ] && [ $CONFIG_GENERATED -eq 1 ]; then
-      echo -e "  4) Install system       - Install NixOS${GREEN} (Ready)${NC}"
-    else
-      echo -e "  4) Install system       - Install NixOS${YELLOW} (Need steps 1-2)${NC}"
-    fi
+        if [ $DISK_PREPARED -eq 1 ] && [ $CONFIG_GENERATED -eq 1 ]; then
+          echo -e "  4) Install system       - Install NixOS${GREEN} (Ready)${NC}"
+        else
+          echo -e "  4) Install system       - Install NixOS${YELLOW} (Need steps 1-2)${NC}"
+        fi
 
     echo -e "\nq) Quit                  - Exit installer"
     echo
