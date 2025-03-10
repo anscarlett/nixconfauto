@@ -21,7 +21,7 @@ let
 
   menu = writeScriptBin "nixconf-menu" ''
     #!${bash}/bin/bash
-    export PATH="${path}:$PATH"
+    export PATH="${path}:$PATH"n
     set -e
 
     # Colors
