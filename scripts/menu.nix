@@ -44,13 +44,26 @@ pkgs.writeShellApplication {
         printf "%*s" $((20 - ${#step} - ${#desc})) " "
         
         case "$status" in
-          "done")    echo -e "${GREEN}✓${NC}" ;;
-          "pending") echo -e "${YELLOW}○${NC}" ;;
-          "ready")   echo -e "${GREEN}→${NC}" ;;
-          "error")   echo -e "${RED}!${NC}" ;;
-          "skip")    echo -e "${YELLOW}-${NC}" ;;
-          *)         echo -e "${RED}?${NC}" ;;
+          "done")
+            printf "${GREEN}✓${NC}"
+            ;;
+          "pending")
+            printf "${YELLOW}○${NC}"
+            ;;
+          "ready")
+            printf "${GREEN}→${NC}"
+            ;;
+          "error")
+            printf "${RED}!${NC}"
+            ;;
+          "skip")
+            printf "${YELLOW}-${NC}"
+            ;;
+          *)
+            printf "${RED}?${NC}"
+            ;;
         esac
+        printf "\n"
       }
 
 
@@ -66,14 +79,33 @@ pkgs.writeShellApplication {
           local status="pending"
           
           case "$i" in
-            "1") [ $DISK_PREPARED -eq 1 ] && status="done" ;;
-            "2") [ $DISK_PREPARED -eq 0 ] && status="skip"
-                [ $CONFIG_GENERATED -eq 1 ] && status="done" ;;
-            "3") [ $CONFIG_GENERATED -eq 0 ] && status="skip"
-                [ $CONFIG_EDITED -eq 1 ] && status="done" ;;
-            "4") [ $DISK_PREPARED -eq 1 ] && [ $CONFIG_GENERATED -eq 1 ] && status="ready"
-                [ $DISK_PREPARED -eq 0 ] || [ $CONFIG_GENERATED -eq 0 ] && status="skip" ;;
-            *) status="error" ;;
+            "1")
+              [ $DISK_PREPARED -eq 1 ] && status="done"
+              ;;
+            "2")
+              if [ $DISK_PREPARED -eq 0 ]; then
+                status="skip"
+              elif [ $CONFIG_GENERATED -eq 1 ]; then
+                status="done"
+              fi
+              ;;
+            "3")
+              if [ $CONFIG_GENERATED -eq 0 ]; then
+                status="skip"
+              elif [ $CONFIG_EDITED -eq 1 ]; then
+                status="done"
+              fi
+              ;;
+            "4")
+              if [ $DISK_PREPARED -eq 1 ] && [ $CONFIG_GENERATED -eq 1 ]; then
+                status="ready"
+              elif [ $DISK_PREPARED -eq 0 ] || [ $CONFIG_GENERATED -eq 0 ]; then
+                status="skip"
+              fi
+              ;;
+            *)
+              status="error"
+              ;;
           esac
           
           print_step_status "$i)" "$step" "$status"
@@ -148,7 +180,9 @@ pkgs.writeShellApplication {
           echo "Enter disk name (e.g. sda, vda, nvme0n1) or 'q' to quit: "
           read -p "> " selected_disk
 
-          [ "$selected_disk" = "q" ] && exit 0
+          if [ "$selected_disk" = "q" ]; then
+            exit 0
+          fi
 
           if check_disk_safety "$selected_disk"; then
             echo -e "\n${YELLOW}WARNING: ALL data on /dev/$selected_disk will be erased!${NC}"
@@ -476,42 +510,42 @@ pkgs.writeShellApplication {
       "1")
         if prepare_disk; then
           DISK_PREPARED=1
-          echo -e "\n${GREEN}✓ Disk ready${NC}"
+          printf "\n${GREEN}✓ Disk ready${NC}\n"
         else
-          echo -e "\n${RED}× Failed${NC}"
+          printf "\n${RED}× Failed${NC}\n"
         fi
         read -p "> "
         ;;
       "2")
         if [ $DISK_PREPARED -eq 0 ]; then
-          echo -e "${YELLOW}! Run step 1 first${NC}"
+          printf "${YELLOW}! Run step 1 first${NC}\n"
         elif generate_config; then
           CONFIG_GENERATED=1
-          echo -e "\n${GREEN}✓ Config ready${NC}"
+          printf "\n${GREEN}✓ Config ready${NC}\n"
         else
-          echo -e "\n${RED}× Failed${NC}"
+          printf "\n${RED}× Failed${NC}\n"
         fi
         read -p "> "
         ;;
       "3")
         if [ $CONFIG_GENERATED -eq 0 ]; then
-          echo -e "${YELLOW}! Run step 2 first${NC}"
+          printf "${YELLOW}! Run step 2 first${NC}\n"
         else
-          echo -e "\n${BLUE}Opening in $EDITOR${NC}"
+          printf "\n${BLUE}Opening in $EDITOR${NC}\n"
           edit_config
           CONFIG_EDITED=1
-          echo -e "${GREEN}✓ Saved${NC}"
+          printf "${GREEN}✓ Saved${NC}\n"
         fi
         read -p "> "
         ;;
       "4")
         if [ $DISK_PREPARED -eq 0 ] || [ $CONFIG_GENERATED -eq 0 ]; then
-          echo -e "${YELLOW}! Complete steps 1-2${NC}"
+          printf "${YELLOW}! Complete steps 1-2${NC}\n"
         else
           if install_system; then
-            echo -e "\n${GREEN}✓ NixOS installed${NC}"
+            printf "\n${GREEN}✓ NixOS installed${NC}\n"
           else
-            echo -e "\n${RED}× Failed${NC}"
+            printf "\n${RED}× Failed${NC}\n"
           fi
         fi
         read -p "> "
@@ -520,11 +554,11 @@ pkgs.writeShellApplication {
         print_help
         ;;
       "q")
-        echo -e "\nBye!"
+        printf "\nBye!\n"
         exit 0
         ;;
       *)
-        echo -e "${RED}Invalid${NC} (h=help)"
+        printf "${RED}Invalid${NC} (h=help)\n"
         sleep 1
         ;;
     esac
